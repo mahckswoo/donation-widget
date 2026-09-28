@@ -1,0 +1,298 @@
+<title>giving.sg donation widget — architecture</title>
+<style>
+  :root {
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --surface-2: #f4f6f8;
+    --ink: #263140;
+    --muted: #676d75;
+    --border: #c2c5cb;
+    --hair: #dee0e4;
+    --navy: #1b3862;
+    --navy-ink: #ffffff;
+    --pink: #e1466a;
+    --pink-bg: #fdeef1;
+    --seafoam: #068a7c;
+    --seafoam-bg: #e4f5f2;
+    --infra: #55617a;
+    --infra-bg: #eef0f5;
+    --shadow: 0 1px 3px rgba(27,56,98,.08), 0 6px 20px rgba(27,56,98,.06);
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1722; --surface: #16212f; --surface-2: #121b27;
+      --ink: #e7ecf2; --muted: #9aa6b6; --border: #2b3949; --hair: #23303f;
+      --navy: #26426d; --navy-ink: #eaf1fb;
+      --pink: #ff9aab; --pink-bg: #2a1a20;
+      --seafoam: #45d3c0; --seafoam-bg: #10241f;
+      --infra: #9fb0cc; --infra-bg: #1a2432;
+      --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f5; --surface: #ffffff; --surface-2: #f4f6f8;
+    --ink: #263140; --muted: #676d75; --border: #c2c5cb; --hair: #dee0e4;
+    --navy: #1b3862; --navy-ink: #ffffff;
+    --pink: #e1466a; --pink-bg: #fdeef1; --seafoam: #068a7c; --seafoam-bg: #e4f5f2;
+    --infra: #55617a; --infra-bg: #eef0f5;
+    --shadow: 0 1px 3px rgba(27,56,98,.08), 0 6px 20px rgba(27,56,98,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1722; --surface: #16212f; --surface-2: #121b27;
+    --ink: #e7ecf2; --muted: #9aa6b6; --border: #2b3949; --hair: #23303f;
+    --navy: #26426d; --navy-ink: #eaf1fb;
+    --pink: #ff9aab; --pink-bg: #2a1a20; --seafoam: #45d3c0; --seafoam-bg: #10241f;
+    --infra: #9fb0cc; --infra-bg: #1a2432;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 48px 24px 72px; }
+
+  header { margin-bottom: 8px; }
+  .eyebrow {
+    font: 600 12px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--seafoam); margin: 0 0 12px;
+  }
+  h1 {
+    font-size: clamp(24px, 4.2vw, 34px); line-height: 1.15; margin: 0 0 8px;
+    letter-spacing: -.02em; text-wrap: balance; font-weight: 750;
+  }
+  .lede { color: var(--muted); font-size: 16px; margin: 0 0 4px; max-width: 62ch; }
+  .lede b { color: var(--ink); font-weight: 650; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 24px 0 8px;
+    padding: 14px 16px; background: var(--surface); border: 1px solid var(--hair);
+    border-radius: 10px;
+  }
+  .key { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .sw { width: 13px; height: 13px; border-radius: 3px; flex: none; }
+  .sw.gsg { background: var(--navy); }
+  .sw.partner { background: var(--surface); border: 1.5px solid var(--border); }
+  .sw.infra { background: var(--infra); }
+  .sw.pink { background: var(--pink); }
+
+  .lane { margin-top: 34px; }
+  .lane-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .lane-num {
+    font: 700 13px/1 var(--mono); color: var(--navy-ink); background: var(--navy);
+    padding: 5px 8px; border-radius: 6px; flex: none;
+  }
+  :root[data-theme="dark"] .lane-num, .lane-num { color: #fff; }
+  @media (prefers-color-scheme: dark) { .lane-num { color: var(--navy-ink); } }
+  .lane-title { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+  .lane-note { font-size: 13px; color: var(--muted); }
+  .lane-note.correct { color: var(--seafoam); font-weight: 600; }
+  .lane-note.fixed { color: var(--pink); font-weight: 600; }
+
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+
+  .node {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px 14px 18px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .node::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    border-radius: 10px 0 0 10px; background: var(--accent, var(--border));
+  }
+  .node.gsg { --accent: var(--navy); }
+  .node.partner { --accent: var(--border); }
+  .node.infra { --accent: var(--infra); }
+  .node .t { font-weight: 680; font-size: 15px; letter-spacing: -.01em; }
+  .node .u { font-family: var(--mono); font-size: 12.5px; color: var(--muted); word-break: break-all; }
+  .node .d { font-size: 13px; color: var(--muted); }
+  .tag {
+    align-self: flex-start; font: 600 10.5px/1 var(--sans); letter-spacing: .08em;
+    text-transform: uppercase; padding: 4px 7px; border-radius: 5px; margin-top: 2px;
+  }
+  .tag.gsg { background: var(--navy); color: #fff; }
+  @media (prefers-color-scheme: dark) { .tag.gsg { color: var(--navy-ink); } }
+  :root[data-theme="dark"] .tag.gsg { color: var(--navy-ink); }
+  :root[data-theme="light"] .tag.gsg { color: #fff; }
+  .tag.partner { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .tag.infra { background: var(--infra-bg); color: var(--infra); }
+
+  /* connector between nodes */
+  .conn {
+    display: flex; align-items: center; gap: 10px; align-self: center;
+    padding: 9px 0; color: var(--muted); font-size: 13px; text-align: center;
+  }
+  .conn .line { width: 2px; height: 14px; background: var(--border); }
+  .conn .lbl { font-family: var(--mono); font-size: 12px; }
+  .conn.down::after {
+    content: "▼"; font-size: 9px; color: var(--border); margin-top: -2px;
+  }
+  .conn.pink { color: var(--pink); }
+  .conn.pink .line { background: var(--pink); }
+  .conn.pink.down::after { color: var(--pink); }
+  .conn.up .line { background: var(--pink); }
+  .conn.up::before { content: "▲"; font-size: 9px; color: var(--pink); }
+  .conn.up { color: var(--pink); }
+
+  .pill {
+    display: inline-block; padding: 4px 10px; border-radius: 100px; font-family: var(--mono);
+    font-size: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--ink);
+  }
+  .pill.pink { background: var(--pink-bg); border-color: var(--pink); color: var(--pink); font-weight: 600; }
+
+  /* runtime side arrows */
+  .rail {
+    border: 1px dashed var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 12px;
+    display: flex; flex-direction: column; gap: 12px; background: var(--surface-2);
+  }
+  .rail-row { display: flex; align-items: flex-start; gap: 12px; }
+  .rail-row .arw { font-family: var(--mono); font-weight: 700; color: var(--pink); flex: none; padding-top: 1px; }
+  .rail-row .arw.gsg { color: var(--navy); }
+  @media (prefers-color-scheme: dark){ .rail-row .arw.gsg { color: var(--infra); } }
+  .rail-row .txt { font-size: 13.5px; }
+  .rail-row .txt b { font-weight: 680; }
+  .rail-row .txt .m { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+
+  /* corrections strip */
+  .changed { margin-top: 40px; border: 1px solid var(--pink); border-radius: 12px; overflow: hidden; }
+  .changed h2 {
+    margin: 0; padding: 12px 18px; font-size: 14px; letter-spacing: .04em; text-transform: uppercase;
+    background: var(--pink-bg); color: var(--pink); font-weight: 700;
+  }
+  .changed ul { list-style: none; margin: 0; padding: 6px 0; }
+  .changed li { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 12px 18px; border-top: 1px solid var(--hair); }
+  .changed li:first-child { border-top: 0; }
+  .changed .was { font-size: 13px; color: var(--muted); }
+  .changed .was .k { font-family: var(--mono); text-decoration: line-through; text-decoration-color: var(--pink); }
+  .changed .now { font-size: 14px; color: var(--ink); }
+  .changed .now .k { font-family: var(--mono); color: var(--seafoam); font-weight: 600; }
+
+  footer { margin-top: 34px; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--hair); padding-top: 14px; }
+  footer .m { font-family: var(--mono); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">giving.sg · R2.8 partner donation widget</p>
+    <h1>Widget architecture — corrected</h1>
+    <p class="lede">The donor-facing flow is an <b>iframe embed</b>, not browser API calls. The delivery path (how <span style="font-family:var(--mono)">embed.js</span> loads) is unchanged; the runtime path is where the earlier diagram was wrong.</p>
+  </header>
+
+  <div class="legend" aria-label="Legend">
+    <span class="key"><span class="sw gsg"></span> giving.sg-owned</span>
+    <span class="key"><span class="sw partner"></span> Partner-owned</span>
+    <span class="key"><span class="sw infra"></span> Third-party infra</span>
+    <span class="key"><span class="sw pink"></span> Corrected vs prior diagram</span>
+  </div>
+
+  <!-- LANE 1 -->
+  <section class="lane">
+    <div class="lane-head">
+      <span class="lane-num">1</span>
+      <div>
+        <h2 class="lane-title">Asset delivery — how the widget loads</h2>
+        <span class="lane-note correct">✓ Unchanged — this half of the prior diagram was correct</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="node partner">
+        <span class="t">Partner site (third-party charity page)</span>
+        <span class="u">&lt;script async src="cdn.giving.sg/widget/v1/embed.js" data-campaign-guid="…"&gt;</span>
+        <span class="tag partner">Partner-owned · one line</span>
+      </div>
+
+      <div class="conn down"><span class="lbl">GET embed.js — one self-contained file</span></div>
+
+      <div class="node infra">
+        <span class="t">cdn.giving.sg</span>
+        <span class="d">Cloudflare DNS only (grey cloud)</span>
+        <span class="tag infra">Cloudflare</span>
+      </div>
+
+      <div class="conn down"><span class="lbl">CNAME → xxxx.x.incapdns.net</span></div>
+
+      <div class="node infra">
+        <span class="t">Imperva Cloud WAF</span>
+        <span class="d">Own cache pool + policy · Imperva-managed TLS cert</span>
+        <span class="tag infra">Imperva</span>
+      </div>
+
+      <div class="conn down"><span class="lbl">origin-pull (HTTPS, Imperva-IP-only)</span></div>
+
+      <div class="node gsg">
+        <span class="t">Widget origin — S3 static site (private)</span>
+        <span class="d">Serves <span style="font-family:var(--mono)">embed.js</span> (lottie + animation JSON inlined). No separate SVG.</span>
+        <span class="tag gsg">giving.sg-owned</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANE 2 -->
+  <section class="lane">
+    <div class="lane-head">
+      <span class="lane-num">2</span>
+      <div>
+        <h2 class="lane-title">Runtime — how a donation happens</h2>
+        <span class="lane-note fixed">✎ Corrected — the prior diagram showed fetch/XHR + CORS here; that never happens</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="node partner">
+        <span class="t">Partner page · widget (mascot)</span>
+        <span class="d">On click, generates <span style="font-family:var(--mono)">PartnerTransactionId</span> (UUID) client-side, opens a modal.</span>
+        <span class="tag partner">Partner-owned</span>
+      </div>
+
+      <div class="conn down pink">
+        <span class="pill pink">opens &lt;iframe&gt; — gated by frame-ancestors CSP (NOT CORS)</span>
+      </div>
+
+      <div class="node gsg">
+        <span class="t">giving.sg app origin — Enhanced Checkout (EPP)</span>
+        <span class="u">/NVPCGiving_sg/CampaignDetailExternal?CampaignGuid=…&amp;PartnerTransactionId=…</span>
+        <span class="d">OutSystems. Renders inside the iframe: amount, tax-relief toggle, and payment (Stripe / Airwallex) — all on giving.sg. 596×800, own navy header + ✕.</span>
+        <span class="tag gsg">giving.sg-owned</span>
+      </div>
+    </div>
+
+    <div class="rail" aria-label="Return and server-to-server messages">
+      <div class="rail-row">
+        <span class="arw">↑</span>
+        <span class="txt"><b>Close:</b> the iframe’s ✕ posts <span class="pill pink">"cancel"</span> <span class="m">(origin uat.giving.sg)</span> → widget removes the modal. <span class="m">Verified.</span></span>
+      </div>
+      <div class="rail-row">
+        <span class="arw gsg">→</span>
+        <span class="txt"><b>Completion:</b> giving.sg app origin <span class="m">──webhook──▶</span> partner server, keyed by <span class="m">PartnerTransactionId</span> + metadata. <span class="m">(server-to-server; the only partner→ / →partner API arrow)</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT CHANGED -->
+  <section class="changed" aria-label="Corrections from the previous diagram">
+    <h2>What changed from the previous diagram</h2>
+    <ul>
+      <li>
+        <span class="was">was &nbsp;<span class="k">fetch / XHR donation APIs · needs CORS headers</span></span>
+        <span class="now">now &nbsp;<span class="k">&lt;iframe&gt; document load · gated by frame-ancestors CSP</span> — the browser makes no donation API call at all; CORS is irrelevant.</span>
+      </li>
+      <li>
+        <span class="was">was &nbsp;<span class="k">GET embed.js + SVG</span></span>
+        <span class="now">now &nbsp;<span class="k">GET embed.js</span> — one self-contained file; the mascot is Lottie JSON inlined, no separate SVG.</span>
+      </li>
+      <li>
+        <span class="was">was &nbsp;<span class="k">(not shown)</span></span>
+        <span class="now">now &nbsp;<span class="k">webhook</span> giving.sg → partner server on completion, and <span class="k">postMessage "cancel"</span> iframe → widget to close. Both were missing.</span>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    Secrets note: OAuth client-credentials + <span class="m">x-api-key</span> belong only to the separate redirect / <span class="m">sessionurl</span> flow, where the partner’s <b>backend</b> calls the API. In this iframe flow there are no secrets and no partner backend — giving.sg’s per-origin <span class="m">frame-ancestors</span> allowlist does the trust job a key otherwise would. Open item: the donation-<b>completion</b> postMessage is not yet confirmed (reconciliation rides on the webhook regardless).
+  </footer>
+</div>
