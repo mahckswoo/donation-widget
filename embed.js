@@ -39,24 +39,36 @@
 
   // ---- host + closed shadow root (isolates from partner CSS) ----------------
   var host = document.createElement('div');
-  var side = POSITION === 'bottom-left' ? 'left:24px;' : 'right:24px;';
-  host.style.cssText = 'position:fixed;bottom:16px;' + side + 'z-index:2147483000;';
+  host.setAttribute('data-position', POSITION === 'bottom-left' ? 'left' : 'right');
   var root = host.attachShadow({ mode: 'closed' });
 
   var style = document.createElement('style');
   style.textContent = [
-    ':host{all:initial}',
+    ':host{all:initial;position:fixed;z-index:2147483000;',
+    ' bottom:calc(16px + env(safe-area-inset-bottom, 0px));right:24px}',
+    ':host([data-position="left"]){right:auto;left:24px}',
     '.mascot{width:106px;height:122px;cursor:pointer;border:0;background:none;padding:0;display:block;',
     ' font:600 13px/1.2 system-ui,sans-serif;color:#1B3862}',
     '.mascot:focus-visible{outline:2px solid #F16577;outline-offset:4px;border-radius:8px}',
-    /* modal */
+    /* modal — desktop: narrow, near full-height panel to minimise scrolling */
     '.overlay{position:fixed;inset:0;background:rgba(60,64,72,.64);display:none;',
-    ' align-items:center;justify-content:center;padding:16px;z-index:2147483001}',
+    ' align-items:center;justify-content:center;padding:24px;box-sizing:border-box;z-index:2147483001}',
     '.overlay.open{display:flex}',
-    '.frame-wrap{position:relative;width:596px;max-width:calc(100vw - 32px);',
-    ' height:800px;max-height:calc(100vh - 32px);border-radius:10px;overflow:hidden;',
+    '.frame-wrap{position:relative;box-sizing:border-box;width:480px;max-width:100%;',
+    ' height:calc(100vh - 48px);height:calc(100dvh - 48px);max-height:960px;',
+    ' border-radius:12px;overflow:hidden;',
     ' box-shadow:0 1px 40px 4px rgba(50,95,160,.30);background:#fff}',
     '.frame-wrap iframe{width:100%;height:100%;border:0;display:block}',
+    /* mobile + landscape phones: bottom sheet using (almost) the full screen.
+       The 24px strip at the top stays visible so donors can tap it to close. */
+    '@media (max-width:640px),(max-height:500px){',
+    ' :host{bottom:calc(12px + env(safe-area-inset-bottom, 0px));right:16px}',
+    ' :host([data-position="left"]){left:16px}',
+    ' .mascot{width:80px;height:92px}',
+    ' .overlay{padding:24px 0 0;align-items:flex-end}',
+    ' .frame-wrap{width:100%;height:100%;max-height:none;border-radius:16px 16px 0 0;',
+    '  padding-bottom:env(safe-area-inset-bottom, 0px)}',
+    '}',
     '@media (prefers-reduced-motion: reduce){.mascot{pointer-events:auto}}',
   ].join('');
 
@@ -82,6 +94,7 @@
   // ---- modal open/close ------------------------------------------------------
   var currentIframe = null;
   var lastFocus = null;
+  var prevOverflow = '';
 
   function openModal() {
     if (overlay.classList.contains('open')) return;
@@ -95,12 +108,16 @@
     currentIframe.setAttribute('allow', 'payment');
     currentIframe.src = src;
     frameWrap.appendChild(currentIframe);
+    // stop the partner page scrolling behind the modal
+    prevOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     overlay.classList.add('open');
   }
 
   function closeModal() {
     if (!overlay.classList.contains('open')) return;
     overlay.classList.remove('open');
+    document.documentElement.style.overflow = prevOverflow;
     if (currentIframe) { currentIframe.remove(); currentIframe = null; }
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
   }
