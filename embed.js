@@ -41,6 +41,8 @@
   var DESKTOP_WIDTH = 425;     // px, visible width of the pop-up
   var DESKTOP_ZOOM = 0.9;      // 1 = actual size; 0.9 = checkout drawn at 90%
   var HIDE_SCROLLBAR = true;   // clip the checkout's scrollbar (scrolling still works)
+  var MIN_CHECKOUT_WIDTH = 480; // px the checkout needs before it adds a sideways scrollbar;
+                                // zoom is reduced automatically if needed to keep this
   var MOBILE_QUERY = '(max-width:640px),(max-height:500px)';
 
   // ---- host + closed shadow root (isolates from partner CSS) ----------------
@@ -122,11 +124,15 @@
     if (!currentIframe) return;
     var st = currentIframe.style;
     if (mobileMq && mobileMq.matches) { st.width = st.height = st.transform = ''; return; }
-    var z = DESKTOP_ZOOM, sb = HIDE_SCROLLBAR ? scrollbarWidth() : 0;
+    var w = frameWrap.clientWidth || DESKTOP_WIDTH;
+    var z = Math.min(DESKTOP_ZOOM, w / MIN_CHECKOUT_WIDTH);
+    // +2px safety margin so no sliver of the scrollbar shows after rounding
+    var sb = HIDE_SCROLLBAR ? scrollbarWidth() + 2 : 0;
     st.width = 'calc(100% / ' + z + ' + ' + sb + 'px)';
     st.height = 'calc(100% / ' + z + ')';
     st.transform = z === 1 ? '' : 'scale(' + z + ')';
   }
+  window.addEventListener('resize', sizeIframe);
   if (mobileMq) {
     if (mobileMq.addEventListener) mobileMq.addEventListener('change', sizeIframe);
     else if (mobileMq.addListener) mobileMq.addListener(sizeIframe);
@@ -144,11 +150,11 @@
     currentIframe.setAttribute('allow', 'payment');
     currentIframe.src = src;
     frameWrap.appendChild(currentIframe);
-    sizeIframe();
     // stop the partner page scrolling behind the modal
     prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
     overlay.classList.add('open');
+    sizeIframe();
   }
 
   function closeModal() {
