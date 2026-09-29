@@ -37,6 +37,12 @@
 
   var IDLE = [0, 120], HOVER = [120, 180];
 
+  // ---- desktop pop-up settings (mobile always uses a full-width sheet at 100%) ----
+  var DESKTOP_WIDTH = 425;     // px, visible width of the pop-up
+  var DESKTOP_ZOOM = 0.9;      // 1 = actual size; 0.9 = checkout drawn at 90%
+  var HIDE_SCROLLBAR = true;   // clip the checkout's scrollbar (scrolling still works)
+  var MOBILE_QUERY = '(max-width:640px),(max-height:500px)';
+
   // ---- host + closed shadow root (isolates from partner CSS) ----------------
   var host = document.createElement('div');
   host.setAttribute('data-position', POSITION === 'bottom-left' ? 'left' : 'right');
@@ -54,14 +60,14 @@
     '.overlay{position:fixed;inset:0;background:rgba(60,64,72,.64);display:none;',
     ' align-items:center;justify-content:center;padding:24px;box-sizing:border-box;z-index:2147483001}',
     '.overlay.open{display:flex}',
-    '.frame-wrap{position:relative;box-sizing:border-box;width:480px;max-width:100%;',
+    '.frame-wrap{position:relative;box-sizing:border-box;width:' + DESKTOP_WIDTH + 'px;max-width:100%;',
     ' height:calc(100vh - 48px);height:calc(100dvh - 48px);max-height:960px;',
     ' border-radius:12px;overflow:hidden;',
     ' box-shadow:0 1px 40px 4px rgba(50,95,160,.30);background:#fff}',
-    '.frame-wrap iframe{width:100%;height:100%;border:0;display:block}',
+    '.frame-wrap iframe{width:100%;height:100%;border:0;display:block;transform-origin:0 0}',
     /* mobile + landscape phones: bottom sheet using (almost) the full screen.
        The 24px strip at the top stays visible so donors can tap it to close. */
-    '@media (max-width:640px),(max-height:500px){',
+    '@media ' + MOBILE_QUERY + '{',
     ' :host{bottom:calc(12px + env(safe-area-inset-bottom, 0px));right:16px}',
     ' :host([data-position="left"]){left:16px}',
     ' .mascot{width:80px;height:92px}',
@@ -96,6 +102,36 @@
   var lastFocus = null;
   var prevOverflow = '';
 
+  // Width of a classic scrollbar in this browser (0 where scrollbars overlay
+  // content, e.g. macOS trackpads and phones). The checkout runs in the same
+  // browser, so its scrollbar is the same width.
+  function scrollbarWidth() {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:absolute;top:-9999px;width:100px;height:100px;overflow:scroll';
+    document.body.appendChild(d);
+    var w = d.offsetWidth - d.clientWidth;
+    d.remove();
+    return w;
+  }
+
+  // Desktop: draw the checkout at DESKTOP_ZOOM and, optionally, push its
+  // scrollbar just outside the visible area. The iframe's own page can't be
+  // styled from here (different site), so this is done by sizing the iframe.
+  var mobileMq = window.matchMedia ? window.matchMedia(MOBILE_QUERY) : null;
+  function sizeIframe() {
+    if (!currentIframe) return;
+    var st = currentIframe.style;
+    if (mobileMq && mobileMq.matches) { st.width = st.height = st.transform = ''; return; }
+    var z = DESKTOP_ZOOM, sb = HIDE_SCROLLBAR ? scrollbarWidth() : 0;
+    st.width = 'calc(100% / ' + z + ' + ' + sb + 'px)';
+    st.height = 'calc(100% / ' + z + ')';
+    st.transform = z === 1 ? '' : 'scale(' + z + ')';
+  }
+  if (mobileMq) {
+    if (mobileMq.addEventListener) mobileMq.addEventListener('change', sizeIframe);
+    else if (mobileMq.addListener) mobileMq.addListener(sizeIframe);
+  }
+
   function openModal() {
     if (overlay.classList.contains('open')) return;
     lastFocus = document.activeElement;
@@ -108,6 +144,7 @@
     currentIframe.setAttribute('allow', 'payment');
     currentIframe.src = src;
     frameWrap.appendChild(currentIframe);
+    sizeIframe();
     // stop the partner page scrolling behind the modal
     prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
