@@ -63,7 +63,7 @@
     '.frame-wrap{position:relative;box-sizing:border-box;width:' + DESKTOP_WIDTH + 'px;max-width:100%;',
     ' height:calc(100vh - 48px);height:calc(100dvh - 48px);max-height:960px;',
     ' border-radius:12px;overflow:hidden;',
-    ' box-shadow:0 1px 40px 4px rgba(50,95,160,.30);background:#fff}',
+    ' box-shadow:0 1px 40px 4px rgba(50,95,160,.30);background:transparent}',
     '.frame-wrap iframe{width:100%;height:100%;border:0;display:block;transform-origin:0 0}',
     /* mobile + landscape phones: bottom sheet using (almost) the full screen.
        The 24px strip at the top stays visible so donors can tap it to close. */
