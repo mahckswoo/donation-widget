@@ -39,7 +39,7 @@
 
   // ---- desktop pop-up settings (mobile always uses a full-width sheet at 100%) ----
   var DESKTOP_WIDTH = 425;     // px, visible width of the pop-up
-  var DESKTOP_ZOOM = 0.95;      // 1 = actual size; 0.9 = checkout drawn at 90%
+  var DESKTOP_ZOOM = 0.9;      // 1 = actual size; 0.9 = checkout drawn at 90%
   var HIDE_SCROLLBAR = false;  // true clips the checkout's scrollbar, BUT cuts off its right edge
                                // whenever the checkout fits without scrolling (e.g. tall monitors)
   var MIN_CHECKOUT_WIDTH = 480; // px the checkout needs before it adds a sideways scrollbar;
